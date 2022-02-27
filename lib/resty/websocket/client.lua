@@ -99,6 +99,7 @@ function _M.connect(self, uri, opts)
     end
 
     local ssl_verify, headers, proto_header, origin_header, sock_opts = false
+    local unix
 
     if opts then
         local protos = opts.protocols
@@ -135,13 +136,25 @@ function _M.connect(self, uri, opts)
                 return nil, "custom headers must be a table"
             end
         end
+
+        if opts.unix then
+            unix = "unix:" .. opts.unix
+        end
     end
 
     local ok, err
     if sock_opts then
-        ok, err = sock:connect(host, port, sock_opts)
+        if unix then
+            ok, err = sock:connect(unix, sock_opts)
+        else
+            ok, err = sock:connect(host, port, sock_opts)
+        end
     else
-        ok, err = sock:connect(host, port)
+        if unix then
+            ok, err = sock:connect(unix)
+        else
+            ok, err = sock:connect(host, port)
+        end
     end
     if not ok then
         return nil, "failed to connect: " .. err
