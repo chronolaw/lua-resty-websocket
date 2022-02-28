@@ -18,6 +18,7 @@ local encode_base64 = ngx.encode_base64
 local concat = table.concat
 local char = string.char
 local str_find = string.find
+local str_sub  = string.sub
 local rand = math.random
 local rshift = bit.rshift
 local band = bit.band
@@ -138,7 +139,14 @@ function _M.connect(self, uri, opts)
         end
 
         if opts.unix then
-            unix = "unix:" .. opts.unix
+            unix = opts.unix
+            if type(unix) ~= "string" then
+                return nil, "unix must be a string"
+            end
+
+            if str_sub(unix, 1, 5) ~= "unix:" then
+                unix = "unix:" .. unix
+            end
         end
     end
 
