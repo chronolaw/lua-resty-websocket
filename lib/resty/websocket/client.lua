@@ -240,12 +240,12 @@ function _M.connect(self, uri, opts)
 
     -- gather all response headers
 
-    local iter, err = re_gmatch(header, "([^:\\s]+):\\s*(.*)\r\n", "jo")
+    local iter, err = re_gmatch(header .. "\r\n", "([^:\\s]+):\\s*(.*?)\r\n", "jo")
     if err then
         return nil, "failed to receive response header: " .. err
     end
 
-    local headers = {}
+    local resp_headers = {}
 
     while true do
         local m, err = iter()
@@ -261,17 +261,19 @@ function _M.connect(self, uri, opts)
         local key = m[1]
         local val = m[2]
 
-        if headers[key] then
-            if type(headers[key]) ~= "table" then
-                headers[key] = { headers[key] }
+        if resp_headers[key] then
+            if type(resp_headers[key]) ~= "table" then
+                resp_headers[key] = { resp_headers[key] }
             end
 
-            insert(headers[key], tostring(val))
+            insert(resp_headers[key], tostring(val))
 
         else
-            headers[key] = tostring(val)
+            resp_headers[key] = tostring(val)
         end
     end
+
+    self.resp_headers = resp_headers
 
     return 1
 end
@@ -405,6 +407,11 @@ function _M.set_keepalive(self, ...)
     end
 
     return sock:setkeepalive(...)
+end
+
+
+function _M.get_resp_headers(self)
+    return self.resp_headers
 end
 
 
