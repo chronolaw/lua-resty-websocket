@@ -14,8 +14,10 @@ local _send_frame = wbproto.send_frame
 local new_tab = wbproto.new_tab
 local tcp = ngx.socket.tcp
 local re_match = ngx.re.match
+local re_gmatch = ngx.re.gmatch
 local encode_base64 = ngx.encode_base64
 local concat = table.concat
+local insert = table.insert
 local char = string.char
 local str_find = string.find
 local rand = math.random
@@ -26,6 +28,7 @@ local type = type
 local debug = ngx.config.debug
 local ngx_log = ngx.log
 local ngx_DEBUG = ngx.DEBUG
+local tostring = tostring
 local assert = assert
 local ssl_support = true
 
@@ -233,6 +236,41 @@ function _M.connect(self, uri, opts)
     m, err = re_match(header, [[^\s*HTTP/1\.1\s+]], "jo")
     if not m then
         return nil, "bad HTTP response status line: " .. header
+    end
+
+    -- gather all response headers
+
+    local iter, err = re_gmatch(header, "([^:\\s]+):\\s*(.*)\r\n", "jo")
+    if err then
+        return nil, "failed to receive response header: " .. err
+    end
+
+    local headers = {}
+
+    while true do
+        local m, err = iter()
+        if err then
+            return nil, "failed to receive response header: " .. err
+        end
+
+        if not m then
+            -- no match found (any more)
+            break
+        end
+
+        local key = m[1]
+        local val = m[2]
+
+        if headers[key] then
+            if type(headers[key]) ~= "table" then
+                headers[key] = { headers[key] }
+            end
+
+            insert(headers[key], tostring(val))
+
+        else
+            headers[key] = tostring(val)
+        end
     end
 
     return 1
