@@ -258,7 +258,7 @@ function _M.connect(self, uri, opts)
             break
         end
 
-        local key = m[1]
+        local key = m[1]:lower()
         local val = m[2]
 
         if resp_headers[key] then
